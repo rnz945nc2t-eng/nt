@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gemini Research Engine - Backend Version</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Space+Mono:wght@400;700&display=swap');
+        
+        :root { 
+            --neon-blue: #00d9ff; 
+            --neon-pink: #ff006e;
+            --neon-green: #00ff9f;
+            --bg-deep: #0a0e27; 
+            --bg-panel: #14192d;
+            --bg-input: #1a1f3a;
+            --text-primary: #e8eaed;
+            --text-secondary: #9aa0a6;
+            --border: #2d3548;
+        }
+        
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        
+        body { 
+            font-family: 'Space Mono', monospace;
+            background: var(--bg-deep);
+            color: var(--text-primary);
+            min-height: 100vh;
+            padding: 20px;
+            line-height: 1.6;
+            background-image: 
+                radial-gradient(circle at 20% 50%, rgba(0, 217, 255, 0.05) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(255, 0, 110, 0.05) 0%, transparent 50%);
+        }
+        
+        .container { max-width: 1100px; margin: 0 auto; }
+        
+        /* Header */
+        .header { 
+            text-align: center; 
+            padding: 40px 20px;
+        }
+        
+        .header h1 { 
+            color: var(--neon-blue);
+            font-size: 3.5rem;
+            font-weight: 700;
+            letter-spacing: -2px;
+            margin-bottom: 10px;
+            text-shadow: 
+                0 0 20px rgba(0, 217, 255, 0.5),
+                0 0 40px rgba(0, 217, 255, 0.2);
+            animation: glow 2s ease-in-out infinite alternate;
+        }
+        
+        @keyframes glow {
+            from { text-shadow: 0 0 20px rgba(0, 217, 255, 0.5), 0 0 40px rgba(0, 217, 255, 0.2); }
+            to { text-shadow: 0 0 30px rgba(0, 217, 255, 0.8), 0 0 60px rgba(0, 217, 255, 0.4); }
+        }
+        
+        .header .subtitle { 
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            font-family: 'JetBrains Mono', monospace;
+            letter-spacing: 2px;
+        }
+        
+        .header .version {
+            display: inline-block;
+            margin-top: 10px;
+            padding: 4px 12px;
+            background: rgba(0, 255, 159, 0.1);
+            border: 1px solid var(--neon-green);
+            border-radius: 20px;
+            color: var(--neon-green);
+            font-size: 0.75rem;
+            font-weight: 700;
+        }
+        
+        /* Status Badge */
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 15px;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-family: 'JetBrains Mono', monospace;
+        }
+        
+        .status-badge.online {
+            background: rgba(0, 255, 159, 0.1);
+            border: 1px solid var(--neon-green);
+            color: var(--neon-green);
+        }
+        
+        .status-badge.offline {
+            background: rgba(255, 0, 110, 0.1);
+            border: 1px solid var(--neon-pink);
+            color: var(--neon-pink);
+        }
+        
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            animation: pulse 2s ease-in-out infinite;
+        }
+        
+        .status-badge.online .status-dot {
+            background: var(--neon-green);
+        }
+        
+        .status-badge.offline .status-dot {
+            background: var(--neon-pink);
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(0.9); }
+        }
+        
+        /* Search Panel */
+        .search-panel { 
+            background: var(--bg-panel);
+            padding: 40px;
+            border-radius: 24px;
+            border: 1px solid var(--border);
+            box-shadow: 
+                0 20px 60px rgba(0, 0, 0, 0.6),
+                inset 0 1px 0 rgba(255, 255, 255, 0.03);
+            margin-bottom: 30px;
+        }
+        
+        .input-group { 
+            display: flex; 
+            gap: 12px; 
+            margin-bottom: 24px;
+        }
+        
+        input[type="text"] { 
+            flex: 1;
+            padding: 18px 24px;
+            border-radius: 16px;
+            border: 2px solid var(--border);
+            background: var(--bg-input);
+            color: var(--text-primary);
+            font-size: 1.05rem;
+            font-family: 'JetBrains Mono', monospace;
+            outline: none;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        input[type="text"]:focus { 
+            border-color: var(--neon-blue);
+            box-shadow: 0 0 0 4px rgba(0, 217, 255, 0.1);
+            transform: translateY(-1px);
+        }
+        
+        button { 
+            padding: 18px 40px;
+            border-radius: 16px;
+            border: none;
+            background: linear-gradient(135deg, var(--neon-blue) 0%, var(--neon-pink) 100%);
+            color: #fff;
+            font-weight: 700;
+            font-size: 1rem;
+            font-family: 'Space Mono', monospace;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            box-shadow: 0 8px 24px rgba(0, 217, 255, 0.3);
+        }
+        
+        button:hover:not(:disabled) { 
+            transform: translateY(-2px);
+            box-shadow: 0 12px 32px rgba(0, 217, 255, 0.4);
+        }
+        
+        button:disabled { 
+            background: linear-gradient(135deg, #4a5568 0%, #2d3748 100%);
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        
+        /* API Keys */
+        .api-keys {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        
+        .key-input-wrapper label {
+            display: block;
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            margin-bottom: 6px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        input[type="password"] {
+            width: 100%;
+            padding: 12px 16px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            background: var(--bg-input);
+            color: var(--text-primary);
+            font-size: 0.9rem;
+            font-family: 'JetBrains Mono', monospace;
+            outline: none;
+            transition: all 0.3s;
+        }
+        
+        /* Status Logs */
+        .status-container { 
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 16px;
+            padding: 20px;
+            min-height: 120px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        
+        .log-entry { 
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            padding: 8px 16px;
+            margin-bottom: 4px;
+            border-left: 2px solid var(--border);
+            animation: slideIn 0.3s ease-out;
+        }
+        
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(-10px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+        
+        .log-entry.active { 
+            color: var(--neon-blue);
+            border-left-color: var(--neon-blue);
+            font-weight: 700;
+            background: rgba(0, 217, 255, 0.05);
+        }
+        
+        .log-entry.success {
+            color: var(--neon-green);
+            border-left-color: var(--neon-green);
+        }
+        
+        .log-entry.error {
+            color: var(--neon-pink);
+            border-left-color: var(--neon-pink);
+            background: rgba(255, 0, 110, 0.05);
+        }
+        
+        /* Results */
+        .results-panel { 
+            background: var(--bg-panel);
+            padding: 50px;
+            border-radius: 24px;
+            border: 1px solid var(--border);
+            min-height: 400px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+        }
+        
+        .results-panel.empty {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-secondary);
+            font-style: italic;
+        }
+        
+        .results-panel h2 {
+            color: var(--neon-blue);
+            font-size: 1.8rem;
+            margin-bottom: 20px;
+            padding-bottom: 12px;
+            border-bottom: 2px solid var(--border);
+        }
+        
+        .results-panel h3 {
+            color: var(--neon-green);
+            font-size: 1.3rem;
+            margin-top: 30px;
+            margin-bottom: 12px;
+        }
+        
+        .results-panel p {
+            margin-bottom: 16px;
+            line-height: 1.8;
+        }
+        
+        .verdict-box {
+            margin-top: 40px;
+            padding: 30px;
+            background: linear-gradient(135deg, rgba(0, 217, 255, 0.08) 0%, rgba(255, 0, 110, 0.08) 100%);
+            border-radius: 16px;
+            border: 2px solid var(--neon-blue);
+        }
+        
+        /* Progress Bar */
+        .progress-bar {
+            height: 3px;
+            background: var(--border);
+            border-radius: 2px;
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--neon-blue), var(--neon-pink));
+            width: 0%;
+            transition: width 0.5s ease;
+        }
+        
+        .error-banner {
+            display: none;
+            background: linear-gradient(135deg, rgba(255, 0, 110, 0.15) 0%, rgba(220, 38, 38, 0.15) 100%);
+            border: 2px solid var(--neon-pink);
+            color: var(--neon-pink);
+            padding: 20px 24px;
+            border-radius: 16px;
+            margin-top: 20px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.9rem;
+        }
+        
+        .error-banner.visible { display: block; }
+        
+        @media (max-width: 768px) {
+            .header h1 { font-size: 2.5rem; }
+            .search-panel, .results-panel { padding: 24px; }
+            .api-keys { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <h1>⚡ GEMINI NEXUS</h1>
+        <p class="subtitle">BACKEND-POWERED RESEARCH PROTOCOL</p>
+        <span class="version">v3.0 NO-CORS</span>
+        <div class="status-badge offline" id="serverStatus">
+            <div class="status-dot"></div>
+            <span>Checking backend...</span>
+        </div>
+    </div>
+
+    <div class="search-panel">
+        <div class="api-keys">
+            <div class="key-input-wrapper">
+                <label for="key1">Primary Engine Key</label>
+                <input type="password" id="key1" placeholder="AIzaSy..." value="AIzaSyBIH2le5x11XveNK7SOWtiZRwjqx8bLUGU">
+            </div>
+            <div class="key-input-wrapper">
+                <label for="key2">Refinement Engine Key</label>
+                <input type="password" id="key2" placeholder="AIzaSy..." value="AIzaSyC7qCduttBbnDTaljyNvvjP3pbwwF9IU5Q">
+            </div>
+        </div>
+        
+        <div class="input-group">
+            <input type="text" id="query" placeholder="Enter your research query..." onkeypress="if(event.key==='Enter') executeResearch()">
+            <button id="execBtn" onclick="executeResearch()">RESEARCH</button>
+        </div>
+        
+        <div class="progress-bar">
+            <div class="progress-fill" id="progressBar"></div>
+        </div>
+        
+        <div class="status-container" id="statusArea">
+            <div class="log-entry" style="opacity: 0.5;">⟩ Awaiting query input...</div>
+        </div>
+        
+        <div class="error-banner" id="errorBox"></div>
+    </div>
+
+    <div class="results-panel empty" id="finalResult">
+        <span>💎 Your synthesized research will materialize here</span>
+    </div>
+</div>
+
+<script>
+// Backend server URL - change if running on different host/port
+const BACKEND_URL = 'http://localhost:5000';
+
+// Check backend status on load
+window.addEventListener('load', checkBackendStatus);
+
+async function checkBackendStatus() {
+    const statusBadge = document.getElementById('serverStatus');
+    
+    try {
+        const response = await fetch(`${BACKEND_URL}/`);
+        const data = await response.json();
+        
+        if (data.status === 'online') {
+            statusBadge.className = 'status-badge online';
+            statusBadge.innerHTML = '<div class="status-dot"></div><span>Backend Online</span>';
+        }
+    } catch (error) {
+        statusBadge.className = 'status-badge offline';
+        statusBadge.innerHTML = '<div class="status-dot"></div><span>Backend Offline</span>';
+    }
+}
+
+async function executeResearch() {
+    const query = document.getElementById('query').value.trim();
+    const key1 = document.getElementById('key1').value.trim();
+    const key2 = document.getElementById('key2').value.trim();
+    const btn = document.getElementById('execBtn');
+    const resultDiv = document.getElementById('finalResult');
+    const errorBox = document.getElementById('errorBox');
+    
+    if (!query) {
+        showError("Please enter a research query");
+        return;
+    }
+    
+    if (!key1 || !key2) {
+        showError("Both API keys are required");
+        return;
+    }
+
+    // Reset UI
+    btn.disabled = true;
+    errorBox.classList.remove('visible');
+    resultDiv.className = 'results-panel empty';
+    resultDiv.innerHTML = '<span style="opacity: 0.5;">🔄 Initializing...</span>';
+    clearLogs();
+    setProgress(0);
+
+    try {
+        // Check backend first
+        addLog("Verifying backend connection...", 'active');
+        await checkBackendStatus();
+        setProgress(5);
+        
+        // Phase 1: Data Gathering
+        addLog("Gathering data from multiple sources...", 'active');
+        setProgress(10);
+        
+        const [wikiData, ddgData] = await Promise.all([
+            fetchWikipedia(query),
+            fetchDuckDuckGo(query)
+        ]);
+        
+        addLog("✓ Data sources acquired", 'success');
+        setProgress(25);
+        
+        // Phase 2: Primary Synthesis
+        addLog("Engine 1: Deep synthesis initiated...", 'active');
+        setProgress(35);
+        
+        const pass1Prompt = buildPrimaryPrompt(query, wikiData, ddgData);
+        const firstDraft = await callGemini(pass1Prompt, key1);
+        
+        addLog("✓ Primary synthesis complete", 'success');
+        setProgress(60);
+        
+        // Phase 3: Cooldown
+        addLog("Transferring to refinement engine...", 'active');
+        await sleep(3000);
+        setProgress(70);
+        
+        // Phase 4: Refinement
+        addLog("Engine 2: Polishing and refining...", 'active');
+        setProgress(80);
+        
+        const pass2Prompt = buildRefinementPrompt(firstDraft, query);
+        const finalOutput = await callGemini(pass2Prompt, key2);
+        
+        addLog("✓ Refinement complete", 'success');
+        setProgress(95);
+        
+        // Phase 5: Display
+        displayResults(finalOutput);
+        setProgress(100);
+        addLog("⚡ Research completed successfully", 'success');
+
+    } catch (err) {
+        console.error("Research error:", err);
+        showError(`${err.message}`);
+        addLog(`✗ Error: ${err.message}`, 'error');
+        resultDiv.className = 'results-panel';
+        resultDiv.innerHTML = '<p style="color: var(--neon-pink);">Research halted. Check that the backend server is running.</p>';
+    } finally {
+        btn.disabled = false;
+    }
+}
+
+async function callGemini(prompt, apiKey) {
+    try {
+        const response = await fetch(`${BACKEND_URL}/api/gemini`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ prompt, api_key: apiKey })
+        });
+        
+        const data = await response.json();
+        
+        if (!response.ok || !data.success) {
+            throw new Error(data.error || 'Gemini API call failed');
+        }
+        
+        return data.text;
+    } catch (error) {
+        throw new Error(`Backend error: ${error.message}. Is the server running?`);
+    }
+}
+
+async function fetchWikipedia(query) {
+    try {
+        const response = await fetch(`${BACKEND_URL}/api/wikipedia?q=${encodeURIComponent(query)}`);
+        const data = await response.json();
+        return data.success ? data.data : "Wikipedia unavailable";
+    } catch (error) {
+        return "Wikipedia unavailable";
+    }
+}
+
+async function fetchDuckDuckGo(query) {
+    try {
+        const response = await fetch(`${BACKEND_URL}/api/duckduckgo?q=${encodeURIComponent(query)}`);
+        const data = await response.json();
+        return data.success ? data.data : "DuckDuckGo unavailable";
+    } catch (error) {
+        return "DuckDuckGo unavailable";
+    }
+}
+
+function buildPrimaryPrompt(query, wikiData, ddgData) {
+    return `You are a deep research AI conducting comprehensive analysis.
+
+RESEARCH TOPIC: ${query}
+
+DATA SOURCES:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[Wikipedia]: ${wikiData}
+[Web Search]: ${ddgData}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Create a comprehensive, technically accurate research report. Use provided data AND your knowledge. Structure with ### headings. Be thorough and professional.`;
+}
+
+function buildRefinementPrompt(draft, originalQuery) {
+    return `You are a Senior Editor refining research.
+
+QUERY: ${originalQuery}
+
+DRAFT:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+${draft}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Polish for clarity, accuracy, and professionalism. Add a "SYNTHESIS VERDICT" section with key takeaways. Output ONLY the final polished version.`;
+}
+
+function addLog(message, type = 'normal') {
+    const area = document.getElementById('statusArea');
+    const timestamp = new Date().toLocaleTimeString('en-US', { hour12: false });
+    
+    document.querySelectorAll('.log-entry').forEach(log => log.classList.remove('active'));
+    
+    const entry = document.createElement('div');
+    entry.className = `log-entry ${type}`;
+    entry.innerHTML = `<span class="timestamp">[${timestamp}]</span> ${message}`;
+    area.appendChild(entry);
+    area.scrollTop = area.scrollHeight;
+}
+
+function clearLogs() {
+    document.getElementById('statusArea').innerHTML = "";
+}
+
+function setProgress(percent) {
+    document.getElementById('progressBar').style.width = percent + '%';
+}
+
+function showError(message) {
+    const errorBox = document.getElementById('errorBox');
+    errorBox.textContent = `⚠ ${message}`;
+    errorBox.classList.add('visible');
+}
+
+function displayResults(content) {
+    const resultDiv = document.getElementById('finalResult');
+    resultDiv.className = 'results-panel';
+    
+    if (!content || content.trim() === '') {
+        resultDiv.innerHTML = '<p style="color: var(--neon-pink);">No results generated.</p>';
+        return;
+    }
+    
+    let html = content
+        .replace(/### (.*?)(\n|$)/g, '<h3>$1</h3>')
+        .replace(/## (.*?)(\n|$)/g, '<h2>$1</h2>')
+        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+        .replace(/\n\n/g, '</p><p>')
+        .replace(/\n/g, '<br>');
+    
+    html = '<p>' + html + '</p>';
+    
+    if (html.includes('SYNTHESIS VERDICT')) {
+        html = html.replace(/(<h3>SYNTHESIS VERDICT<\/h3>)/, '<div class="verdict-box">$1');
+        html += '</div>';
+    }
+    
+    resultDiv.innerHTML = html;
+}
+
+function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+console.log('%c⚡ GEMINI NEXUS v3.0 (Backend Version)', 'color: #00d9ff; font-size: 16px; font-weight: bold;');
+console.log('%cBackend URL: ' + BACKEND_URL, 'color: #9aa0a6;');
+</script>
+
+</body>
+</html>
